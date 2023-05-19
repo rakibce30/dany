@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const cors = require('cors');
 const app = express();
@@ -31,9 +31,23 @@ async function run() {
 
         // Toy GET request
         app.get('/toys', async(req, res) => {
-            const result = await toyCollection.find().toArray();
-            res.send(result);
+            const limit = parseInt(req.query.limit);
+            if (limit) {
+                const result = await toyCollection.find().limit(limit).toArray();   
+                return res.send(result);
+            }
+            else{
+                const result = await toyCollection.find().toArray(); 
+                return res.send(result);
+            }
         })
+
+        app.get('/toy/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await toyCollection.findOne(query);
+            res.send(result);
+        } )
 
         app.get('/my-toys', async(req, res) => {
             const email = req.query.email;
@@ -45,8 +59,32 @@ async function run() {
         // Toy POST request
         app.post('/add-toy', async(req, res) => {
             const body = req.body;
-            console.log(body);
             const result = await toyCollection.insertOne(body);
+            res.send(result);
+        });
+
+        // MyToy Edit
+        app.put('/my-toys/edit/:id', async(req, res) => {
+            const id = req.params.id;
+            const body = req.body;
+            console.log(body);
+            const filter = {_id: new ObjectId(id)};
+            const updateToys = {
+                $set: {
+                    price: body.price,
+                    quantity: body.quantity,
+                    description: body.description
+                }
+            }
+            const result = await toyCollection.updateOne(filter, updateToys);
+            res.send(result)
+        });
+
+        // MyToys Delete
+        app.delete('/my-Toys/delete/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const result = await toyCollection.deleteOne(query);
             res.send(result);
         });
 
